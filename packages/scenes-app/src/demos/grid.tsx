@@ -1,12 +1,17 @@
 import {
   SceneGridLayout,
   SceneGridItem,
-  SceneFlexLayout,
-  SceneFlexItem,
+  // SceneFlexLayout,
+  // SceneFlexItem,
   SceneAppPage,
   EmbeddedScene,
   SceneAppPageState,
   PanelBuilders,
+  SceneVariableSet,
+  TextBoxVariable,
+  behaviors,
+  SceneObjectState,
+  SceneObjectBase,
 } from '@grafana/scenes';
 import { getQueryRunnerWithRandomWalkQuery, getEmbeddedSceneDefaults } from './utils';
 
@@ -18,50 +23,59 @@ export function getGridLayoutTest(defaults: SceneAppPageState): SceneAppPage {
       return new EmbeddedScene({
         ...getEmbeddedSceneDefaults(),
         $data: getQueryRunnerWithRandomWalkQuery(),
-        body: new SceneGridLayout({
-          isDraggable: true,
-          children: [
-            new SceneGridItem({
-              x: 0,
-              y: 0,
-              width: 12,
-              height: 10,
-              isResizable: true,
-              isDraggable: true,
-              body: PanelBuilders.timeseries().setTitle('Draggable and resizable').build(),
-            }),
-            new SceneGridItem({
-              x: 12,
-              y: 0,
-              width: 12,
-              height: 10,
-              isResizable: false,
-              isDraggable: false,
-              body: PanelBuilders.timeseries().setTitle('No drag and no resize').build(),
-            }),
+        $behaviors: [getVariableChangeBehavior('npanel'), getVariableChangeBehavior('ncol')],
+        $variables: new SceneVariableSet({
+          variables: [
+            new TextBoxVariable({
+              name: 'ncol',
+              value: '1',
 
-            new SceneGridItem({
-              x: 6,
-              y: 11,
-              width: 12,
-              height: 10,
-              isDraggable: false,
-              isResizable: true,
-              body: new SceneFlexLayout({
-                direction: 'column',
-                children: [
-                  new SceneFlexItem({
-                    body: PanelBuilders.timeseries().setTitle('Child of flex layout').build(),
-                  }),
-                  new SceneFlexItem({
-                    body: PanelBuilders.timeseries().setTitle('Child of flex layout').build(),
-                  }),
-                ],
-              }),
+            }),
+            new TextBoxVariable({
+              name: 'npanel',
+              value: '1',
             }),
           ],
         }),
+        body: new SceneGridLayout({
+          isDraggable: true,
+          children: getLayoutChildren(1,1)
+        }),
       });
+    },
+  });
+}
+
+function getLayoutChildren(count: number, ncol: number) {
+  return Array.from(Array(count), (v, index) => {
+    const x = 0 + Math.floor(25 / ncol) * (index % ncol);
+    const width = Math.floor(25 / ncol);
+    return new SceneGridItem({
+      x: x,
+      y: 0,
+      width: width,
+      height: 10,
+      isResizable: true,
+      isDraggable: true,
+      body: PanelBuilders.timeseries().setTitle('Draggable and resizable').build(),
+    })
+  }
+  );
+}
+
+function getVariableChangeBehavior(variableName: string) {
+  return new behaviors.ActWhenVariableChanged({
+    variableName,
+    onChange: (variable) => {
+      const scene: EmbeddedScene = variable.parent?.parent;
+      console.log(scene.state.$variables?.getByName('ncol')?.state.value);
+      scene.setState({
+        body: new SceneGridLayout({
+          isDraggable: true,
+          children: getLayoutChildren(Number(scene.state.$variables?.getByName('npanel')?.state.value),Number(scene.state.$variables?.getByName('ncol')?.state.value))
+        }),
+      })
+      console.log(`${variable.state.name} changed`);
     },
   });
 }
