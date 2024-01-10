@@ -11,6 +11,7 @@ import {
   VizPanelMenu,
 } from '@grafana/scenes';
 import { getQueryRunnerWithRandomWalkQuery, getEmbeddedSceneDefaults } from './utils';
+import { DashboardCursorSync } from '@grafana/schema';
 // import { Button } from '@grafana/ui';
 // import React from 'react';
 
@@ -22,7 +23,7 @@ export function getGridLayoutTest(defaults: SceneAppPageState): SceneAppPage {
       return new EmbeddedScene({
         ...getEmbeddedSceneDefaults(),
         // $data: getQueryRunnerWithRandomWalkQuery(),
-        $behaviors: [getVariableChangeBehavior('npanel'), getVariableChangeBehavior('ncol')],
+        $behaviors: [getVariableChangeBehavior('npanel'), getVariableChangeBehavior('ncol'), new behaviors.CursorSync({ key: 'sync1', sync: DashboardCursorSync.Tooltip })],
         $variables: new SceneVariableSet({
           variables: [
             new TextBoxVariable({
